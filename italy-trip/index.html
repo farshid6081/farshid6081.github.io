@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+  <meta name="theme-color" content="#1B3A6B">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Italy Trip">
+  <meta name="description" content="Plan, track and share your Italy vacation itinerary">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" href="icons/favicon-32.png">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="css/style.css">
+  <title>Italy Trip Planner</title>
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-text">
+      <h1 id="trip-title">Italy Trip</h1>
+      <p id="trip-dates" class="trip-dates"></p>
+    </div>
+  </header>
+
+  <main id="view-container">
+
+    <!-- ITINERARY -->
+    <section id="view-itinerary" class="view active">
+      <div id="itinerary-list" class="itinerary-list"></div>
+      <p id="itinerary-empty" class="empty-state hidden">
+        No plans yet. Tap <strong>+</strong> to add something, or use the
+        <strong>Import</strong> tab to paste plans from a chat.
+      </p>
+    </section>
+
+    <!-- MAP -->
+    <section id="view-map" class="view">
+      <div class="map-toolbar">
+        <button id="geocode-all-btn" class="secondary-btn">📍 Locate all places</button>
+        <span id="geocode-status" class="geocode-status"></span>
+      </div>
+      <div id="map" class="map-container"></div>
+      <div class="map-legend">
+        <span><i class="dot" style="background:#1B3A6B"></i> Hotel</span>
+        <span><i class="dot" style="background:#CD212A"></i> Food</span>
+        <span><i class="dot" style="background:#008C45"></i> Activity</span>
+        <span><i class="dot" style="background:#E08E00"></i> Transport</span>
+        <span><i class="dot" style="background:#777777"></i> Other</span>
+      </div>
+    </section>
+
+    <!-- IMPORT -->
+    <section id="view-import" class="view">
+      <h2 class="view-title">Import from a chat</h2>
+      <p class="hint">
+        Paste plans you've written in a chat (with friends, or with an AI assistant).
+        Use lines starting with <code>Day 1 - Sept 2</code> for dates and bullet points
+        (<code>- Hotel: ...</code>, <code>- Dinner at ...</code>) for each plan.
+        We'll do our best to detect the type, time, cost and confirmation numbers
+        &mdash; you can fix anything before adding.
+      </p>
+      <textarea id="import-text" rows="10" placeholder="Day 1 - Sept 2, 2026
+- Hotel: Hotel Artemide, Via Nazionale 22, check-in 3pm, conf #ABC123
+- Dinner at Trattoria da Enzo, 8pm, ~€60
+
+Day 2 - Sept 3, 2026
+- Train to Florence, 9:15am, PNR XYZ789
+- Visit the Uffizi Gallery, 2pm, ticket #UF1234, €25"></textarea>
+      <div class="import-actions">
+        <button id="parse-btn" class="primary-btn">Parse plans</button>
+        <button id="clear-import-btn" class="secondary-btn">Clear</button>
+      </div>
+      <div id="import-preview" class="import-preview hidden">
+        <h3>Detected items <span id="import-count"></span></h3>
+        <div id="import-preview-list" class="import-preview-list"></div>
+        <button id="add-imported-btn" class="primary-btn">Add selected to itinerary</button>
+      </div>
+    </section>
+
+    <!-- TRIP INFO / SETTINGS -->
+    <section id="view-trip" class="view">
+      <h2 class="view-title">Trip details</h2>
+      <form id="trip-form" class="form">
+        <label>Trip name
+          <input type="text" id="trip-name" placeholder="Italy Vacation 2026">
+        </label>
+        <div class="form-row">
+          <label>Start date
+            <input type="date" id="trip-start">
+          </label>
+          <label>End date
+            <input type="date" id="trip-end">
+          </label>
+        </div>
+        <div class="form-row">
+          <label>Travelers
+            <input type="text" id="trip-travelers" placeholder="e.g. Me &amp; Sara">
+          </label>
+          <label>Currency
+            <select id="trip-currency">
+              <option value="EUR">EUR (€)</option>
+              <option value="USD">USD ($)</option>
+              <option value="GBP">GBP (£)</option>
+            </select>
+          </label>
+        </div>
+      </form>
+
+      <h2 class="view-title">Share &amp; backup</h2>
+      <div class="trip-actions">
+        <button id="share-btn" class="primary-btn">📤 Share itinerary</button>
+        <button id="export-btn" class="secondary-btn">⬇️ Export backup (JSON)</button>
+        <label class="secondary-btn file-label">
+          ⬆️ Import backup (JSON)
+          <input type="file" id="import-file" accept="application/json" hidden>
+        </label>
+        <button id="clear-all-btn" class="danger-btn">🗑️ Clear all data</button>
+      </div>
+
+      <p class="hint">
+        Your plans are stored only on this device (browser local storage).
+        Use <strong>Export backup</strong> to save a copy or move it to another device,
+        and <strong>Share itinerary</strong> to send a readable summary to friends or family.
+      </p>
+
+      <p class="hint">Add this app to your Home Screen: open the Share menu in Safari
+        and choose <strong>Add to Home Screen</strong> for the full app experience.</p>
+    </section>
+
+  </main>
+
+  <nav class="tab-bar">
+    <button class="tab-btn active" data-view="itinerary">
+      <span class="tab-icon">🗓️</span><span class="tab-label">Itinerary</span>
+    </button>
+    <button class="tab-btn" data-view="map">
+      <span class="tab-icon">🗺️</span><span class="tab-label">Map</span>
+    </button>
+    <button class="tab-btn" data-view="import">
+      <span class="tab-icon">💬</span><span class="tab-label">Import</span>
+    </button>
+    <button class="tab-btn" data-view="trip">
+      <span class="tab-icon">⚙️</span><span class="tab-label">Trip</span>
+    </button>
+  </nav>
+
+  <button id="add-item-btn" class="fab" aria-label="Add item">+</button>
+
+  <!-- ADD / EDIT ITEM MODAL -->
+  <div id="item-modal" class="modal hidden">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h3 id="modal-title">Add plan</h3>
+        <button id="modal-close" class="icon-btn" aria-label="Close">✕</button>
+      </div>
+      <form id="item-form" class="form">
+        <input type="hidden" id="item-id">
+        <label>Type
+          <select id="item-type">
+            <option value="hotel">🏨 Hotel</option>
+            <option value="restaurant">🍽️ Food &amp; Drink</option>
+            <option value="activity">🎟️ Activity / Attraction</option>
+            <option value="transport">🚆 Transport</option>
+            <option value="other">📌 Other</option>
+          </select>
+        </label>
+        <label>Title
+          <input type="text" id="item-title" required placeholder="e.g. Hotel Artemide">
+        </label>
+        <div class="form-row">
+          <label>Date
+            <input type="date" id="item-date">
+          </label>
+          <label>Start time
+            <input type="time" id="item-start-time">
+          </label>
+          <label>End time
+            <input type="time" id="item-end-time">
+          </label>
+        </div>
+        <label>Location name
+          <input type="text" id="item-location-name" placeholder="e.g. Hotel Artemide">
+        </label>
+        <label>Address (used for the map)
+          <input type="text" id="item-address" placeholder="e.g. Via Nazionale 22, Roma">
+        </label>
+        <div class="form-row">
+          <label>Confirmation / ticket #
+            <input type="text" id="item-confirmation" placeholder="e.g. ABC123">
+          </label>
+          <label>Cost
+            <input type="number" step="0.01" min="0" id="item-cost" placeholder="0.00">
+          </label>
+        </div>
+        <label>Booking / info link
+          <input type="url" id="item-url" placeholder="https://...">
+        </label>
+        <label>Notes
+          <textarea id="item-notes" rows="3" placeholder="Any extra details..."></textarea>
+        </label>
+        <label class="checkbox-row">
+          <input type="checkbox" id="item-done">
+          Done / completed
+        </label>
+        <div class="modal-actions">
+          <button type="button" id="delete-item-btn" class="danger-btn hidden">Delete</button>
+          <button type="submit" class="primary-btn">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/parser.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "Italy Trip Planner",
+  "short_name": "Italy Trip",
+  "description": "Plan, edit, track and share your Italy vacation itinerary",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F4F5F0",
+  "theme_color": "#1B3A6B",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
